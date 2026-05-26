@@ -55,7 +55,7 @@ class InstagramBot:
         self.instagram_business_account_id = os.environ.get("INSTAGRAM_BUSINESS_ACCOUNT_ID", "")
         self.facebook_page_id = os.environ.get("FACEBOOK_PAGE_ID", "")
         self.webhook_verify_token = os.environ.get("WEBHOOK_VERIFY_TOKEN", "my_secure_token")
-        self.max_media_to_scan = int(os.environ.get("MAX_MEDIA_TO_SCAN", 5))
+        self.max_media_to_scan = int(os.environ.get("MAX_MEDIA_TO_SCAN", 20))
         self.max_comments_per_media = int(os.environ.get("MAX_COMMENTS_PER_MEDIA", 50))
         self.comment_lookback_hours = int(os.environ.get("COMMENT_LOOKBACK_HOURS", 24))
 
@@ -76,7 +76,7 @@ class InstagramBot:
             if self.webhook_verify_token == "my_secure_token":
                 self.webhook_verify_token = config.get("webhook_verify_token", "my_secure_token")
             if not os.environ.get("MAX_MEDIA_TO_SCAN"):
-                self.max_media_to_scan = config.get("max_media_to_scan", 5)
+                self.max_media_to_scan = config.get("max_media_to_scan", 20)
             if not os.environ.get("MAX_COMMENTS_PER_MEDIA"):
                 self.max_comments_per_media = config.get("max_comments_per_media", 50)
             if not os.environ.get("COMMENT_LOOKBACK_HOURS"):
@@ -87,7 +87,7 @@ class InstagramBot:
         self.instagram_business_account_id = config_data.get("instagram_business_account_id", "")
         self.facebook_page_id = config_data.get("facebook_page_id", "")
         self.webhook_verify_token = config_data.get("webhook_verify_token", "my_secure_token")
-        self.max_media_to_scan = int(config_data.get("max_media_to_scan", 5))
+        self.max_media_to_scan = int(config_data.get("max_media_to_scan", 20))
         self.max_comments_per_media = int(config_data.get("max_comments_per_media", 50))
         self.comment_lookback_hours = int(config_data.get("comment_lookback_hours", 24))
         
@@ -303,8 +303,8 @@ class InstagramBot:
 
         log(f"Authenticated as @{self_username}. Scanning recent posts...")
 
-        # 1. Get recent media
-        url = f"https://graph.facebook.com/{API_VERSION}/{self.instagram_business_account_id}/media?fields=id,caption,permalink,timestamp&limit={self.max_media_to_scan}"
+        # 1. Get recent media with expanded comments
+        url = f"https://graph.facebook.com/{API_VERSION}/{self.instagram_business_account_id}/media?fields=id,caption,permalink,timestamp,comments_count,comments{{id,text,username,timestamp}}&limit={self.max_media_to_scan}"
         res = self.make_request(url)
         if not res["success"]:
             err_msg = res["error"].get("error", {}).get("message", "Failed to retrieve media.")
@@ -321,15 +321,25 @@ class InstagramBot:
         for media in media_list:
             media_id = media.get("id")
             permalink = media.get("permalink", "")
-            log(f"Scanning media: {permalink}")
+            comments_count = media.get("comments_count", 0)
+            log(f"Scanning media: {permalink} (Comments count: {comments_count})")
 
-            url_comments = f"https://graph.facebook.com/{API_VERSION}/{media_id}/comments?fields=id,text,username,timestamp&limit={self.max_comments_per_media}"
-            res_comments = self.make_request(url_comments)
-            if not res_comments["success"]:
-                log(f"Warning: Failed to fetch comments for media {media_id}")
-                continue
+            if comments_count == 0:
+                comments = []
+            else:
+                # Try to get comments from the expanded comments field
+                comments_node = media.get("comments")
+                if comments_node and "data" in comments_node:
+                    comments = comments_node["data"]
+                else:
+                    # Fallback to individual request if comments weren't expanded
+                    url_comments = f"https://graph.facebook.com/{API_VERSION}/{media_id}/comments?fields=id,text,username,timestamp&limit={self.max_comments_per_media}"
+                    res_comments = self.make_request(url_comments)
+                    if not res_comments["success"]:
+                        log(f"Warning: Failed to fetch comments for media {media_id}")
+                        continue
+                    comments = res_comments["data"].get("data", [])
 
-            comments = res_comments["data"].get("data", [])
             for comment in comments:
                 processed_count += 1
                 if self.process_comment(comment, self_username):

@@ -194,7 +194,7 @@ async function loadConfig() {
     elements.igAccountIdInput.value = currentConfig.instagram_business_account_id || '';
     elements.fbPageIdInput.value = currentConfig.facebook_page_id || '';
     elements.verifyTokenInput.value = currentConfig.webhook_verify_token || 'my_secure_token';
-    elements.maxMediaInput.value = currentConfig.max_media_to_scan || 5;
+    elements.maxMediaInput.value = currentConfig.max_media_to_scan || 20;
     elements.maxCommentsInput.value = currentConfig.max_comments_per_media || 50;
     elements.lookbackHoursInput.value = currentConfig.comment_lookback_hours || 24;
   }

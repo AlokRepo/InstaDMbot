@@ -1,0 +1,15 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+
+# Local sensitive configurations (credentials/tokens)
+config.json
+
+# Logs
+*.log
+auto_dm.log

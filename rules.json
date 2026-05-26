@@ -1,0 +1,39 @@
+[
+  {
+    "id": "rule_universal",
+    "name": "Universal Catch-All",
+    "trigger_type": "all",
+    "keywords": [],
+    "dm_template": "Fellow anime fan spotted! \ud83e\udd1d Grab your snacks and head over to aniverse.sbs to watch the latest episodes. Happy streaming! \ud83c\udf38\u2708\ufe0f",
+    "public_reply_template": "Sent you a DM! \ud83d\udce9 Check your inbox.",
+    "active": true
+  },
+  {
+    "id": "rule_link",
+    "name": "Link Request (Inactive)",
+    "trigger_type": "keyword",
+    "keywords": [
+      "link",
+      "get",
+      "info",
+      "guide"
+    ],
+    "dm_template": "Hey! Here is the link you requested: https://example.com/guide \ud83d\ude80 Let us know what you think!",
+    "public_reply_template": "Just sent you a DM with the link! Check your inbox \ud83d\udce9",
+    "active": false
+  },
+  {
+    "id": "rule_price",
+    "name": "Price Request (Inactive)",
+    "trigger_type": "keyword",
+    "keywords": [
+      "price",
+      "cost",
+      "buy",
+      "much"
+    ],
+    "dm_template": "Thanks for your interest! Our pricing starts at $29/mo. You can view all our plans here: https://example.com/pricing \ud83d\udcb3",
+    "public_reply_template": "Sent you our pricing details via DM! \ud83d\udce9",
+    "active": false
+  }
+]

@@ -1,0 +1,66 @@
+name: Instagram Auto-DM Poller
+
+on:
+  schedule:
+    # Runs automatically every 15 minutes (note: GitHub Action cron runs can be delayed)
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      force_scan:
+        description: 'Trigger a manual scan right now'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  poll-and-reply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to commit and push changes back to the repository
+    
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify Secret Credentials Presence
+        run: |
+          if [ -z "${{ secrets.INSTAGRAM_ACCESS_TOKEN }}" ]; then
+            echo "::error::INSTAGRAM_ACCESS_TOKEN secret is missing. Set it in repository Settings > Secrets and Variables > Actions."
+            exit 1
+          fi
+          if [ -z "${{ secrets.INSTAGRAM_BUSINESS_ACCOUNT_ID }}" ]; then
+            echo "::error::INSTAGRAM_BUSINESS_ACCOUNT_ID secret is missing. Set it in repository Settings."
+            exit 1
+          fi
+          if [ -z "${{ secrets.FACEBOOK_PAGE_ID }}" ]; then
+            echo "::error::FACEBOOK_PAGE_ID secret is missing. Set it in repository Settings."
+            exit 1
+          fi
+          echo "Credentials checked and validated."
+
+      - name: Run Polling Script
+        env:
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          INSTAGRAM_BUSINESS_ACCOUNT_ID: ${{ secrets.INSTAGRAM_BUSINESS_ACCOUNT_ID }}
+          FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+        run: |
+          python auto_dm.py --poll
+
+      - name: Commit and Push Sent Cache Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add sent_comments.json
+          
+          # Only commit and push if there are actual updates to the cache
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "No new comments processed. Working directory clean."
+          else
+            git commit -m "chore: auto-update processed comment cache [skip ci]"
+            git push
+          fi

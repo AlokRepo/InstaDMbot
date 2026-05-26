@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InstaDM | Configuration Dashboard</title>
+  
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Background Orbs -->
+  <div class="orb orb-purple"></div>
+  <div class="orb orb-pink"></div>
+  <div class="orb orb-blue"></div>
+
+  <div class="app-container">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">
+        <i class="fa-brands fa-instagram logo-icon"></i>
+        <span class="logo-text">Insta<span class="gradient-text">DM</span></span>
+      </div>
+      
+      <!-- Connection Status indicator -->
+      <div class="status-card" id="connection-status-card">
+        <div class="status-indicator">
+          <span class="status-dot disconnected" id="status-dot"></span>
+          <span class="status-label" id="status-label">Checking Status...</span>
+        </div>
+        <div class="status-details" id="status-details">Not connected to API</div>
+      </div>
+      
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="credentials" id="tab-btn-credentials">
+          <i class="fa-solid fa-key"></i> Credentials
+        </button>
+        <button class="nav-item" data-tab="rules" id="tab-btn-rules">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Reply Rules
+        </button>
+        <button class="nav-item" data-tab="cache" id="tab-btn-cache">
+          <i class="fa-solid fa-database"></i> Cache Database
+        </button>
+        <button class="nav-item" data-tab="logs" id="tab-btn-logs">
+          <i class="fa-solid fa-terminal"></i> Terminal Logs
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="btn btn-primary btn-poll" id="trigger-poll-btn">
+          <i class="fa-solid fa-arrows-rotate"></i> Run Manual Poll
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- Credentials Tab -->
+      <section class="tab-panel active" id="panel-credentials">
+        <div class="panel-header">
+          <h1 class="panel-title">Meta API Credentials</h1>
+          <p class="panel-subtitle">Configure your Facebook Developer credentials and Instagram account links.</p>
+        </div>
+
+        <form id="credentials-form" class="glass-card form-container">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="access_token">Page Access Token</label>
+              <div class="input-container">
+                <i class="fa-solid fa-shield-halved input-icon"></i>
+                <input type="password" id="access_token" placeholder="EAAb..." autocomplete="off">
+                <button type="button" class="btn-toggle-visibility" id="toggle-token-visibility">
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
+              <p class="field-help">Long-lived token or System User Token generated in Facebook Developer portal.</p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="instagram_business_account_id">Instagram Business Account ID</label>
+              <div class="input-container">
+                <i class="fa-brands fa-instagram input-icon"></i>
+                <input type="text" id="instagram_business_account_id" placeholder="178414...">
+              </div>
+              <p class="field-help">Can be found in your Meta Business Suite or Facebook Page Settings under Instagram.</p>
+            </div>
+
+            <div class="form-group">
+              <label for="facebook_page_id">Facebook Page ID</label>
+              <div class="input-container">
+                <i class="fa-brands fa-facebook input-icon"></i>
+                <input type="text" id="facebook_page_id" placeholder="105234...">
+              </div>
+              <p class="field-help">The ID of the Facebook Page linked to your Instagram professional account.</p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="webhook_verify_token">Webhook Verify Token</label>
+              <div class="input-container">
+                <i class="fa-solid fa-signature input-icon"></i>
+                <input type="text" id="webhook_verify_token" placeholder="my_secure_token">
+              </div>
+              <p class="field-help">Token used to verify incoming Webhook requests if deployed to a public web server.</p>
+            </div>
+
+            <div class="form-group">
+              <div class="form-row-nested">
+                <div class="nested-group">
+                  <label for="max_media_to_scan">Max Media Scan</label>
+                  <input type="number" id="max_media_to_scan" min="1" max="25" value="5">
+                </div>
+                <div class="nested-group">
+                  <label for="max_comments_per_media">Max Comments/Post</label>
+                  <input type="number" id="max_comments_per_media" min="1" max="100" value="50">
+                </div>
+              </div>
+              <p class="field-help">Media limits analyzed during a polling cycle. Higher values use more API call tokens.</p>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" id="test-connection-btn">
+              <i class="fa-solid fa-plug"></i> Test Connection
+            </button>
+            <button type="submit" class="btn btn-primary" id="save-credentials-btn">
+              <i class="fa-solid fa-floppy-disk"></i> Save Configuration
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Rules Tab -->
+      <section class="tab-panel" id="panel-rules">
+        <div class="panel-header flex-header">
+          <div>
+            <h1 class="panel-title">Reply Rules</h1>
+            <p class="panel-subtitle">Define matching criteria to trigger automated direct messages and comment replies.</p>
+          </div>
+          <button class="btn btn-primary" id="add-rule-btn">
+            <i class="fa-solid fa-plus"></i> Add New Rule
+          </button>
+        </div>
+
+        <!-- Rules list container -->
+        <div class="rules-list" id="rules-list-container">
+          <!-- Dynamically inserted rules -->
+        </div>
+      </section>
+
+      <!-- Cache Database Tab -->
+      <section class="tab-panel" id="panel-cache">
+        <div class="panel-header flex-header">
+          <div>
+            <h1 class="panel-title">Cache Database</h1>
+            <p class="panel-subtitle">Processed comment IDs stored locally. This prevents double DMs on subsequent scans.</p>
+          </div>
+          <button class="btn btn-danger" id="clear-cache-btn">
+            <i class="fa-solid fa-trash-can"></i> Clear Processed Cache
+          </button>
+        </div>
+
+        <div class="glass-card cache-card">
+          <div class="cache-status-container">
+            <div class="cache-stat">
+              <span class="cache-stat-value" id="cache-count">0</span>
+              <span class="cache-stat-label">Processed Comments</span>
+            </div>
+          </div>
+          
+          <h2 class="section-title">Recently Processed Comment IDs</h2>
+          <div class="cache-list-wrapper">
+            <ul class="cache-list" id="cache-list-entries">
+              <li class="empty-state">No processed comments in database.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Logs Tab -->
+      <section class="tab-panel" id="panel-logs">
+        <div class="panel-header flex-header">
+          <div>
+            <h1 class="panel-title">Terminal Logs</h1>
+            <p class="panel-subtitle">Real-time bot execution reports, API calls, and automation status logs.</p>
+          </div>
+          <button class="btn btn-secondary" id="refresh-logs-btn">
+            <i class="fa-solid fa-rotate"></i> Refresh Logs
+          </button>
+        </div>
+
+        <div class="terminal-card">
+          <div class="terminal-header">
+            <div class="terminal-buttons">
+              <span class="terminal-btn close"></span>
+              <span class="terminal-btn minimize"></span>
+              <span class="terminal-btn maximize"></span>
+            </div>
+            <div class="terminal-title">auto_dm.log</div>
+          </div>
+          <div class="terminal-body" id="logs-console">
+            <!-- Logs output -->
+            <div class="log-line text-muted">Console loading...</div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- Notification Toast -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Add/Edit Rule Modal -->
+  <div class="modal-overlay" id="rule-modal">
+    <div class="modal-card glass-card">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Create Reply Rule</h2>
+        <button class="modal-close" id="modal-close-btn">&times;</button>
+      </div>
+      <form id="rule-form">
+        <input type="hidden" id="rule-id">
+        
+        <div class="form-group">
+          <label for="rule-name">Rule Name</label>
+          <input type="text" id="rule-name" placeholder="e.g., Info Trigger" required>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="rule-trigger">Trigger Type</label>
+            <select id="rule-trigger">
+              <option value="all">Universal Catch-All</option>
+              <option value="keyword">Keyword Matching</option>
+            </select>
+          </div>
+          
+          <div class="form-group" id="keywords-group">
+            <label for="rule-keywords">Keywords (Comma separated)</label>
+            <input type="text" id="rule-keywords" placeholder="e.g., info, link, buy, price">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="rule-dm">Direct Message (DM) Response</label>
+          <textarea id="rule-dm" rows="4" placeholder="Hello @{username}! Here is the detail you requested..." required></textarea>
+          <p class="field-help">Use <strong>{username}</strong> to insert the user's Instagram username dynamically.</p>
+        </div>
+
+        <div class="form-group">
+          <label for="rule-public">Public Comment Reply (Optional)</label>
+          <input type="text" id="rule-public" placeholder="e.g., Sent you a DM @{username}! check inbox 📩">
+          <p class="field-help">If empty, no public comment reply will be posted.</p>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <input type="checkbox" id="rule-active" checked>
+          <label for="rule-active">Activate Rule immediately</label>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="modal-cancel-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="modal-submit-btn">Save Rule</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

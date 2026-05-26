@@ -128,6 +128,10 @@
                   <label for="max_comments_per_media">Max Comments/Post</label>
                   <input type="number" id="max_comments_per_media" min="1" max="100" value="50">
                 </div>
+                <div class="nested-group">
+                  <label for="comment_lookback_hours">Lookback (Hours)</label>
+                  <input type="number" id="comment_lookback_hours" min="1" max="168" value="24">
+                </div>
               </div>
               <p class="field-help">Media limits analyzed during a polling cycle. Higher values use more API call tokens.</p>
             </div>

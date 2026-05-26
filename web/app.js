@@ -23,6 +23,7 @@ const elements = {
   verifyTokenInput: document.getElementById('webhook_verify_token'),
   maxMediaInput: document.getElementById('max_media_to_scan'),
   maxCommentsInput: document.getElementById('max_comments_per_media'),
+  lookbackHoursInput: document.getElementById('comment_lookback_hours'),
   toggleTokenBtn: document.getElementById('toggle-token-visibility'),
   testConnectionBtn: document.getElementById('test-connection-btn'),
   saveCredentialsBtn: document.getElementById('save-credentials-btn'),
@@ -195,6 +196,7 @@ async function loadConfig() {
     elements.verifyTokenInput.value = currentConfig.webhook_verify_token || 'my_secure_token';
     elements.maxMediaInput.value = currentConfig.max_media_to_scan || 5;
     elements.maxCommentsInput.value = currentConfig.max_comments_per_media || 50;
+    elements.lookbackHoursInput.value = currentConfig.comment_lookback_hours || 24;
   }
 }
 
@@ -288,7 +290,8 @@ async function handleSaveCredentials(e) {
     facebook_page_id: elements.fbPageIdInput.value.trim(),
     webhook_verify_token: elements.verifyTokenInput.value.trim(),
     max_media_to_scan: parseInt(elements.maxMediaInput.value),
-    max_comments_per_media: parseInt(elements.maxCommentsInput.value)
+    max_comments_per_media: parseInt(elements.maxCommentsInput.value),
+    comment_lookback_hours: parseInt(elements.lookbackHoursInput.value) || 24
   };
   
   elements.saveCredentialsBtn.disabled = true;

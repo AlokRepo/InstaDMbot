@@ -57,6 +57,7 @@ class InstagramBot:
         self.webhook_verify_token = os.environ.get("WEBHOOK_VERIFY_TOKEN", "my_secure_token")
         self.max_media_to_scan = 5
         self.max_comments_per_media = 50
+        self.comment_lookback_hours = int(os.environ.get("COMMENT_LOOKBACK_HOURS", 24))
 
         # Load local config if env variables are not present
         self.load_local_config()
@@ -76,6 +77,7 @@ class InstagramBot:
                 self.webhook_verify_token = config.get("webhook_verify_token", "my_secure_token")
             self.max_media_to_scan = config.get("max_media_to_scan", 5)
             self.max_comments_per_media = config.get("max_comments_per_media", 50)
+            self.comment_lookback_hours = config.get("comment_lookback_hours", 24)
 
     def save_local_config(self, config_data):
         self.access_token = config_data.get("access_token", "")
@@ -84,6 +86,7 @@ class InstagramBot:
         self.webhook_verify_token = config_data.get("webhook_verify_token", "my_secure_token")
         self.max_media_to_scan = int(config_data.get("max_media_to_scan", 5))
         self.max_comments_per_media = int(config_data.get("max_comments_per_media", 50))
+        self.comment_lookback_hours = int(config_data.get("comment_lookback_hours", 24))
         
         # Save to local file
         return save_json_file(CONFIG_FILE, config_data)
@@ -170,6 +173,26 @@ class InstagramBot:
         # Skip if comment is made by the account itself to prevent endless loops
         if commenter_username == self_username or not commenter_username:
             return False
+
+        # Skip if comment is older than lookback window (default 24 hours)
+        timestamp_str = comment.get("timestamp")
+        if timestamp_str:
+            try:
+                # Convert +HHMM or -HHMM offsets to +HH:MM / -HH:MM format for Python ISO parser compatibility
+                if len(timestamp_str) >= 5 and (timestamp_str[-5] == "+" or timestamp_str[-5] == "-") and ":" not in timestamp_str[-4:]:
+                    timestamp_str = timestamp_str[:-2] + ":" + timestamp_str[-2:]
+                elif timestamp_str.endswith("Z"):
+                    timestamp_str = timestamp_str[:-1] + "+00:00"
+                
+                comment_dt = datetime.datetime.fromisoformat(timestamp_str)
+                current_dt = datetime.datetime.now(datetime.timezone.utc)
+                age_seconds = (current_dt - comment_dt).total_seconds()
+                
+                max_age_seconds = self.comment_lookback_hours * 3600
+                if age_seconds > max_age_seconds:
+                    return False
+            except Exception as e:
+                log(f"Warning: Failed to parse comment timestamp '{timestamp_str}': {e}")
 
         log(f"New comment detected from @{commenter_username}: \"{comment_text}\"")
 

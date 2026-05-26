@@ -48,6 +48,9 @@ jobs:
           INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
           INSTAGRAM_BUSINESS_ACCOUNT_ID: ${{ secrets.INSTAGRAM_BUSINESS_ACCOUNT_ID }}
           FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+          COMMENT_LOOKBACK_HOURS: 24  # Increase this if you want to scan older comments
+          MAX_MEDIA_TO_SCAN: 5        # Increase this to scan more posts/reels
+          MAX_COMMENTS_PER_MEDIA: 50
         run: |
           python auto_dm.py --poll
 

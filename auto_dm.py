@@ -55,8 +55,8 @@ class InstagramBot:
         self.instagram_business_account_id = os.environ.get("INSTAGRAM_BUSINESS_ACCOUNT_ID", "")
         self.facebook_page_id = os.environ.get("FACEBOOK_PAGE_ID", "")
         self.webhook_verify_token = os.environ.get("WEBHOOK_VERIFY_TOKEN", "my_secure_token")
-        self.max_media_to_scan = 5
-        self.max_comments_per_media = 50
+        self.max_media_to_scan = int(os.environ.get("MAX_MEDIA_TO_SCAN", 5))
+        self.max_comments_per_media = int(os.environ.get("MAX_COMMENTS_PER_MEDIA", 50))
         self.comment_lookback_hours = int(os.environ.get("COMMENT_LOOKBACK_HOURS", 24))
 
         # Load local config if env variables are not present
@@ -75,9 +75,12 @@ class InstagramBot:
                 self.facebook_page_id = config.get("facebook_page_id", "")
             if self.webhook_verify_token == "my_secure_token":
                 self.webhook_verify_token = config.get("webhook_verify_token", "my_secure_token")
-            self.max_media_to_scan = config.get("max_media_to_scan", 5)
-            self.max_comments_per_media = config.get("max_comments_per_media", 50)
-            self.comment_lookback_hours = config.get("comment_lookback_hours", 24)
+            if not os.environ.get("MAX_MEDIA_TO_SCAN"):
+                self.max_media_to_scan = config.get("max_media_to_scan", 5)
+            if not os.environ.get("MAX_COMMENTS_PER_MEDIA"):
+                self.max_comments_per_media = config.get("max_comments_per_media", 50)
+            if not os.environ.get("COMMENT_LOOKBACK_HOURS"):
+                self.comment_lookback_hours = config.get("comment_lookback_hours", 24)
 
     def save_local_config(self, config_data):
         self.access_token = config_data.get("access_token", "")

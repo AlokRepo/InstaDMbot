@@ -1,6 +1,8 @@
 # Instagram Auto-DM System 📩
 
-A lightweight, zero-dependency Python system that automatically replies to Instagram comments with a direct message (DM) and/or a public comment reply. It supports keyword matching and universal catch-all fallback messages.
+[![Discord](https://img.shields.io/badge/Discord-Join%20Our%20Server-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/invite/Fcqwtdnv3g)
+
+A lightweight, zero-dependency Python system that automatically replies to Instagram comments with a direct message (DM) and/or a public comment reply. It supports keyword matching and universal catch-all fallback messages. Join our community on [Discord](https://discord.com/invite/Fcqwtdnv3g) to ask questions, share feedback, and get help!
 
 Inspired by [AniTrack](https://github.com/AlokRepo/AniTrack), this project offers two run configurations:
 1. **Serverless Poller (GitHub Actions)**: Runs automatically on a cron schedule (every 15 minutes) to scan comments, reply, and push execution state back to your repository.

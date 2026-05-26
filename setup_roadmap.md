@@ -20,9 +20,9 @@ graph TD
 The foundation requires linking Facebook and Instagram Business assets.
 
 1. **Instagram Professional Account**:
-   - Converted the Instagram target account (`@animewapx`) to a **Professional Account (Creator/Business)**.
+   - Converted the Instagram target account to a **Professional Account (Creator/Business)**.
 2. **Linked Facebook Page**:
-   - Created a Facebook Page (`InstantDM`) and connected the Instagram account via Page Settings > Linked Accounts.
+   - Created a Facebook Page and connected the Instagram account via Page Settings > Linked Accounts.
 3. **Meta Developer Application**:
    - Created a new App on the [Meta Developer Portal](https://developers.facebook.com/) choosing the **Business** use case.
    - Associated the Facebook Page and Instagram accounts with the developer profile.
@@ -44,8 +44,8 @@ Obtained all system-level IDs and solved the Graph Explorer UI "resetting" issue
 
 ### 1. Extracting Account & Page IDs
 Queried the versioned Graph Explorer endpoint `GET /v25.0/me/accounts?fields=instagram_business_account{id,username}` to retrieve linked assets:
-* **Facebook Page ID**: `259008041286230`
-* **Instagram Business Account ID**: `17841456744846956`
+* **Facebook Page ID**: `<YOUR_FACEBOOK_PAGE_ID>`
+* **Instagram Business Account ID**: `<YOUR_INSTAGRAM_BUSINESS_ACCOUNT_ID>`
 
 ### 2. Extracting Page Access Token
 To prevent the Graph Explorer UI from resetting back to a *User Token* (which triggers `"An unknown error has occurred"` on DM attempts):
@@ -104,8 +104,8 @@ Set up serverless polling to run continuously without a local machine.
 ### Step 1: Add Repository Secrets
 Navigate to **GitHub Repository Settings > Secrets and Variables > Actions > Secrets** and add:
 * `INSTAGRAM_ACCESS_TOKEN` (Long-Lived Page Access Token)
-* `INSTAGRAM_BUSINESS_ACCOUNT_ID`: `17841456744846956`
-* `FACEBOOK_PAGE_ID`: `259008041286230`
+* `INSTAGRAM_BUSINESS_ACCOUNT_ID` (Your Instagram Business Account ID)
+* `FACEBOOK_PAGE_ID` (Your Facebook Page ID)
 
 ### Step 2: Configure Actions Write Permissions
 Enable Git writes to allow the action to commit the processed comment cache:

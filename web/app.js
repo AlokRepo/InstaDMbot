@@ -28,6 +28,15 @@ const elements = {
   testConnectionBtn: document.getElementById('test-connection-btn'),
   saveCredentialsBtn: document.getElementById('save-credentials-btn'),
   
+  // Token Helper
+  helperAppIdInput: document.getElementById('helper_app_id'),
+  helperAppSecretInput: document.getElementById('helper_app_secret'),
+  helperUserTokenInput: document.getElementById('helper_user_token'),
+  fetchAccountsBtn: document.getElementById('fetch-accounts-btn'),
+  discoveredAccountsContainer: document.getElementById('discovered-accounts-container'),
+  discoveredPagesSelect: document.getElementById('discovered_pages_select'),
+  applyDiscoveredBtn: document.getElementById('apply-discovered-btn'),
+  
   // Rules
   rulesContainer: document.getElementById('rules-list-container'),
   addRuleBtn: document.getElementById('add-rule-btn'),
@@ -67,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavigation();
   initVisibilityToggles();
   loadAllData();
+  initAccordions();
   
   // Event Listeners
   elements.credentialsForm.addEventListener('submit', handleSaveCredentials);
@@ -79,6 +89,10 @@ document.addEventListener('DOMContentLoaded', () => {
   elements.clearCacheBtn.addEventListener('click', handleClearCache);
   elements.refreshLogsBtn.addEventListener('click', loadLogs);
   elements.triggerPollBtn.addEventListener('click', handleTriggerPoll);
+  
+  elements.fetchAccountsBtn.addEventListener('click', handleFetchAccounts);
+  elements.discoveredPagesSelect.addEventListener('change', handleSelectDiscoveredPage);
+  elements.applyDiscoveredBtn.addEventListener('click', handleApplyDiscoveredCredentials);
 });
 
 // --- Tab Navigation ---
@@ -622,4 +636,107 @@ async function handleTriggerPoll() {
   // Reload logs and cache info
   loadLogs();
   loadCache();
+}
+
+// --- Accordions & Guide ---
+function initAccordions() {
+  const triggers = document.querySelectorAll('.accordion-trigger');
+  triggers.forEach(trigger => {
+    trigger.addEventListener('click', () => {
+      const item = trigger.closest('.accordion-item');
+      const isActive = item.classList.contains('active');
+      
+      // Close other accordions
+      document.querySelectorAll('.accordion-item').forEach(i => i.classList.remove('active'));
+      
+      if (!isActive) {
+        item.classList.add('active');
+      }
+    });
+  });
+}
+
+// --- Token Helper Handlers ---
+let discoveredPages = [];
+
+async function handleFetchAccounts() {
+  const app_id = elements.helperAppIdInput.value.trim();
+  const app_secret = elements.helperAppSecretInput.value.trim();
+  const user_token = elements.helperUserTokenInput.value.trim();
+  
+  if (!app_id || !app_secret || !user_token) {
+    showToast('Please fill in Meta App ID, App Secret, and User Access Token.', 'error');
+    return;
+  }
+  
+  elements.fetchAccountsBtn.disabled = true;
+  elements.fetchAccountsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Fetching...';
+  elements.discoveredAccountsContainer.style.display = 'none';
+  elements.applyDiscoveredBtn.disabled = true;
+  
+  const res = await fetchAPI('/api/retrieve-tokens', 'POST', {
+    app_id,
+    app_secret,
+    user_token
+  });
+  
+  elements.fetchAccountsBtn.disabled = false;
+  elements.fetchAccountsBtn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Discover Accounts';
+  
+  if (res.ok && res.data.success) {
+    discoveredPages = res.data.pages || [];
+    if (discoveredPages.length === 0) {
+      showToast('No Facebook Pages with linked Instagram Business accounts were found.', 'warning');
+      return;
+    }
+    
+    // Populate select dropdown
+    const select = elements.discoveredPagesSelect;
+    select.innerHTML = '<option value="">-- Select an account to auto-configure --</option>';
+    
+    discoveredPages.forEach((page, index) => {
+      const igName = page.instagram_account ? `@${page.instagram_account.username}` : 'No Instagram Linked';
+      const option = document.createElement('option');
+      option.value = index;
+      option.textContent = `${page.page_name} (Instagram: ${igName})`;
+      
+      if (!page.instagram_account) {
+        option.disabled = true;
+        option.textContent += ' [Required: Link IG Business Account]';
+      }
+      select.appendChild(option);
+    });
+    
+    elements.discoveredAccountsContainer.style.display = 'block';
+    showToast(`Successfully found ${discoveredPages.length} pages/accounts!`, 'success');
+  } else {
+    showToast(res.data.message || 'Failed to fetch accounts.', 'error');
+  }
+}
+
+function handleSelectDiscoveredPage() {
+  const selectedIndex = elements.discoveredPagesSelect.value;
+  if (selectedIndex !== '') {
+    elements.applyDiscoveredBtn.disabled = false;
+  } else {
+    elements.applyDiscoveredBtn.disabled = true;
+  }
+}
+
+function handleApplyDiscoveredCredentials() {
+  const selectedIndex = elements.discoveredPagesSelect.value;
+  if (selectedIndex === '') return;
+  
+  const page = discoveredPages[selectedIndex];
+  if (!page) return;
+  
+  // Populate main inputs
+  elements.accessTokenInput.value = page.page_access_token || '';
+  elements.fbPageIdInput.value = page.page_id || '';
+  if (page.instagram_account) {
+    elements.igAccountIdInput.value = page.instagram_account.id || '';
+  }
+  
+  showToast('Applied credentials successfully! Please review and click "Save Configuration" below.', 'success');
+  elements.credentialsForm.scrollIntoView({ behavior: 'smooth' });
 }

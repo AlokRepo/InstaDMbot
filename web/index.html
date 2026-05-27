@@ -73,7 +73,72 @@
           <p class="panel-subtitle">Configure your Facebook Developer credentials and Instagram account links.</p>
         </div>
 
+        <!-- Token Helper Card -->
+        <div class="glass-card token-helper-card mb-4">
+          <div class="card-header-with-badge">
+            <h2 class="section-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Permanent Token Generator</h2>
+            <span class="badge badge-universal">Recommended</span>
+          </div>
+          <p class="panel-subtitle mb-4">Painless setup! Exchange a temporary User Access Token for a permanent Page Token and automatically fetch all associated account IDs.</p>
+          
+          <div class="token-helper-form">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="helper_app_id">Meta App ID</label>
+                <div class="input-container">
+                  <i class="fa-solid fa-cubes input-icon"></i>
+                  <input type="text" id="helper_app_id" placeholder="e.g., 849203948201948">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="helper_app_secret">Meta App Secret</label>
+                <div class="input-container">
+                  <i class="fa-solid fa-key input-icon"></i>
+                  <input type="password" id="helper_app_secret" placeholder="••••••••••••••••••••••••••••••••" autocomplete="new-password">
+                </div>
+              </div>
+            </div>
+            
+            <div class="form-row mt-3">
+              <div class="form-group">
+                <label for="helper_user_token">Short-Lived User Access Token</label>
+                <div class="input-container">
+                  <i class="fa-solid fa-user-shield input-icon"></i>
+                  <input type="password" id="helper_user_token" placeholder="EAAb..." autocomplete="off">
+                </div>
+                <p class="field-help">Generate this in the Meta Graph API Explorer (expires in 1-2 hours).</p>
+              </div>
+            </div>
+
+            <div class="form-actions mt-3">
+              <button type="button" class="btn btn-secondary" id="fetch-accounts-btn">
+                <i class="fa-solid fa-magnifying-glass"></i> Discover Accounts
+              </button>
+            </div>
+          </div>
+
+          <!-- Discovered Accounts Dropdown Area (Hidden initially) -->
+          <div class="discovered-accounts-container" id="discovered-accounts-container" style="display: none;">
+            <div class="divider-glow"></div>
+            <div class="form-group">
+              <label for="discovered_pages_select">Discovered Instagram Accounts</label>
+              <div class="select-wrapper">
+                <select id="discovered_pages_select">
+                  <option value="">-- Select an account to auto-configure --</option>
+                </select>
+              </div>
+              <p class="field-help text-success-glow"><i class="fa-solid fa-circle-info"></i> Selecting an account will automatically populate and construct the credentials configuration below.</p>
+            </div>
+            <div class="form-actions mt-3">
+              <button type="button" class="btn btn-primary" id="apply-discovered-btn" disabled>
+                <i class="fa-solid fa-check-double"></i> Apply Credentials
+              </button>
+            </div>
+          </div>
+        </div>
+
         <form id="credentials-form" class="glass-card form-container">
+          <h2 class="section-title"><i class="fa-solid fa-key"></i> Credentials Configuration</h2>
           <div class="form-row">
             <div class="form-group">
               <label for="access_token">Page Access Token</label>
@@ -146,6 +211,68 @@
             </button>
           </div>
         </form>
+
+        <!-- Expandable Setup Guide -->
+        <div class="glass-card setup-guide-card mt-4">
+          <h2 class="section-title"><i class="fa-solid fa-book-open"></i> Setup & Troubleshooting Guide</h2>
+          <p class="panel-subtitle mb-3">Learn how to retrieve your tokens and configure your Meta app properly.</p>
+          
+          <div class="accordion-container">
+            <div class="accordion-item">
+              <button type="button" class="accordion-trigger">
+                <span>1. Creating a Meta App & Preparing Accounts</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </button>
+              <div class="accordion-content">
+                <ol class="guide-steps">
+                  <li>Go to the <a href="https://developers.facebook.com/" target="_blank">Meta Developer Portal</a> and log in.</li>
+                  <li>Click <strong>Create App</strong>, choose the <strong>Business</strong> use case (highly recommended for Instagram API integration), and complete app registration.</li>
+                  <li>Make sure your Instagram account is a <strong>Business/Creator (Professional)</strong> profile.</li>
+                  <li>Verify your Instagram account is linked to your Facebook Page via the Page Settings > Linked Accounts.</li>
+                </ol>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <button type="button" class="accordion-trigger">
+                <span>2. Generating a Short-Lived User Token via Graph Explorer</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </button>
+              <div class="accordion-content">
+                <ol class="guide-steps">
+                  <li>Open the <a href="https://developers.facebook.com/tools/explorer/" target="_blank">Meta Graph API Explorer</a>.</li>
+                  <li>In the <strong>Meta App</strong> dropdown, select the App you created in Step 1.</li>
+                  <li>In the <strong>Permissions</strong> section, add these scopes:
+                    <ul>
+                      <li><code>instagram_business_basic</code></li>
+                      <li><code>instagram_business_manage_messages</code> (for sending DMs)</li>
+                      <li><code>instagram_manage_comments</code> (for reading/replying to comments)</li>
+                      <li><code>pages_show_list</code></li>
+                      <li><code>pages_read_engagement</code></li>
+                    </ul>
+                  </li>
+                  <li>Click <strong>Generate Token</strong> and authenticate. Copy the resulting token into the "Short-Lived User Access Token" field above.</li>
+                </ol>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <button type="button" class="accordion-trigger">
+                <span>3. Alternative: Generating a Permanent System User Token</span>
+                <i class="fa-solid fa-chevron-down"></i>
+              </button>
+              <div class="accordion-content">
+                <p>If you don't want to use an App Secret or deal with page exchanges, you can create a <strong>System User</strong> in Meta Business Manager:</p>
+                <ol class="guide-steps">
+                  <li>Go to your <strong>Business Settings</strong> > <strong>Users</strong> > <strong>System Users</strong>.</li>
+                  <li>Add a new System User (admin access recommended) and assign the Facebook Page and Instagram Account assets to them.</li>
+                  <li>Click <strong>Generate New Token</strong>, select your App, check the permissions listed in Step 2, and generate.</li>
+                  <li>This token **never expires** and can be pasted directly into the <strong>Page Access Token</strong> field in the manual configuration form below.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- Rules Tab -->

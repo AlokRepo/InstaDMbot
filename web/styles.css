@@ -976,3 +976,138 @@ input:checked + .slider:before {
 .toast.success i { color: var(--color-success); }
 .toast.error i { color: var(--color-danger); }
 .toast.info i { color: var(--color-accent); }
+
+/* Helper Utilities */
+.mb-4 { margin-bottom: 24px; }
+.mt-3 { margin-top: 16px; }
+.mt-4 { margin-top: 24px; }
+
+/* Token Generator Card & Dropdown */
+.card-header-with-badge {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.divider-glow {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(168, 85, 247, 0) 0%, rgba(168, 85, 247, 0.4) 50%, rgba(168, 85, 247, 0) 100%);
+  margin: 24px 0;
+}
+
+.select-wrapper {
+  position: relative;
+}
+
+.select-wrapper select {
+  padding-left: 16px; /* Shift padding since there is no left icon */
+}
+
+.text-success-glow {
+  color: var(--color-success);
+  text-shadow: 0 0 8px rgba(0, 255, 127, 0.2);
+}
+
+/* Accordion Component */
+.accordion-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.accordion-item {
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.accordion-item:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.accordion-trigger {
+  width: 100%;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.accordion-trigger:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.accordion-trigger i {
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.accordion-item.active .accordion-trigger i {
+  transform: rotate(180deg);
+  color: var(--color-accent);
+}
+
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
+  padding: 0 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.accordion-item.active .accordion-content {
+  max-height: 500px;
+  padding: 0 20px 20px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* Guide List Styling */
+.guide-steps {
+  padding-left: 20px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guide-steps li strong {
+  color: var(--text-main);
+}
+
+.guide-steps ul {
+  padding-left: 20px;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style-type: circle;
+}
+
+.guide-steps a {
+  color: var(--color-accent);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--color-accent);
+  transition: all 0.2s ease;
+}
+
+.guide-steps a:hover {
+  color: var(--text-main);
+  border-bottom-style: solid;
+}
+

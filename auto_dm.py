@@ -10,6 +10,14 @@ import datetime
 import http.server
 import socketserver
 
+# Ensure UTF-8 printing on Windows console
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 # Global Constants
 CONFIG_FILE = "config.json"
 RULES_FILE = "rules.json"
@@ -21,12 +29,24 @@ API_VERSION = "v20.0"
 def log(message):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     formatted = f"[{timestamp}] {message}"
-    print(formatted)
+    try:
+        print(formatted)
+    except UnicodeEncodeError:
+        try:
+            print(formatted.encode(sys.stdout.encoding, errors='replace').decode(sys.stdout.encoding))
+        except Exception:
+            try:
+                print(formatted.encode('ascii', errors='replace').decode('ascii'))
+            except Exception:
+                pass
     try:
         with open(LOG_FILE, "a", encoding="utf-8") as f:
             f.write(formatted + "\n")
     except Exception as e:
-        print(f"Error writing to log file: {e}")
+        try:
+            print(f"Error writing to log file: {e}")
+        except Exception:
+            pass
 
 # --- Helper to load JSON files safely ---
 def load_json_file(filepath, default_value):
@@ -146,13 +166,16 @@ class InstagramBot:
         url = f"https://graph.facebook.com/{API_VERSION}/{self.instagram_business_account_id}?fields=username"
         res = self.make_request(url)
         if res["success"]:
+            username = res["data"].get("username", "Unknown")
+            log(f"Connection test successful: Authenticated as @{username}")
             return {
                 "success": True,
-                "username": res["data"].get("username", "Unknown"),
-                "message": f"Successfully connected! Authenticated as @{res['data'].get('username')}."
+                "username": username,
+                "message": f"Successfully connected! Authenticated as @{username}."
             }
         else:
             err_msg = res["error"].get("error", {}).get("message", "API connection failed.")
+            log(f"Connection test failed: {err_msg}")
             return {"success": False, "message": err_msg}
 
     # --- Fetch Username ---
@@ -161,6 +184,9 @@ class InstagramBot:
         res = self.make_request(url)
         if res["success"]:
             return res["data"].get("username", "")
+        else:
+            err_msg = res.get("error", {}).get("error", {}).get("message", "Unknown Graph API error")
+            log(f"API Error fetching self username: {err_msg}")
         return ""
 
     # --- Process a single comment ---
@@ -444,6 +470,86 @@ class DashboardAPIHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_json({"success": True, "message": "Configuration saved successfully."})
             else:
                 self.send_json({"success": False, "message": "Failed to save configuration."}, status=500)
+        
+        elif self.path == "/api/retrieve-tokens":
+            app_id = payload.get("app_id", "").strip()
+            app_secret = payload.get("app_secret", "").strip()
+            user_token = payload.get("user_token", "").strip()
+            
+            if not app_id or not app_secret or not user_token:
+                log("Token retrieval failed: Missing App ID, App Secret, or User Token.")
+                self.send_json({"success": False, "message": "Missing App ID, App Secret, or User Token."}, status=400)
+                return
+            
+            log(f"Exchanging short-lived user token for long-lived user token (App ID: {app_id})...")
+            # Step 1: Exchange short-lived token for long-lived token
+            exchange_url = f"https://graph.facebook.com/{API_VERSION}/oauth/access_token?grant_type=fb_exchange_token&client_id={app_id}&client_secret={app_secret}&fb_exchange_token={user_token}"
+            
+            req = urllib.request.Request(exchange_url, method="GET")
+            try:
+                with urllib.request.urlopen(req) as response:
+                    res_data = json.loads(response.read().decode("utf-8"))
+                    long_lived_token = res_data.get("access_token")
+            except urllib.error.HTTPError as e:
+                try:
+                    err_body = e.read().decode("utf-8")
+                    err_data = json.loads(err_body)
+                    err_msg = err_data.get("error", {}).get("message", f"HTTP error {e.code}")
+                except Exception:
+                    err_msg = f"HTTP error {e.code}"
+                log(f"Token exchange failed: {err_msg}")
+                self.send_json({"success": False, "message": f"Failed to exchange token: {err_msg}"}, status=400)
+                return
+            except Exception as e:
+                log(f"Token exchange connection error: {str(e)}")
+                self.send_json({"success": False, "message": f"Connection error: {str(e)}"}, status=500)
+                return
+                
+            if not long_lived_token:
+                log("Token exchange failed: No token returned in response.")
+                self.send_json({"success": False, "message": "Failed to exchange token: No token returned in response."}, status=400)
+                return
+                
+            log("Fetching Facebook pages and linked Instagram accounts...")
+            # Step 2: Fetch user accounts
+            accounts_url = f"https://graph.facebook.com/{API_VERSION}/me/accounts?fields=access_token,name,id,instagram_business_account{{id,username}}&access_token={long_lived_token}"
+            req_accounts = urllib.request.Request(accounts_url, method="GET")
+            try:
+                with urllib.request.urlopen(req_accounts) as response:
+                    accounts_data = json.loads(response.read().decode("utf-8"))
+            except urllib.error.HTTPError as e:
+                try:
+                    err_body = e.read().decode("utf-8")
+                    err_data = json.loads(err_body)
+                    err_msg = err_data.get("error", {}).get("message", f"HTTP error {e.code}")
+                except Exception:
+                    err_msg = f"HTTP error {e.code}"
+                log(f"Accounts fetch failed: {err_msg}")
+                self.send_json({"success": False, "message": f"Failed to fetch accounts: {err_msg}"}, status=400)
+                return
+            except Exception as e:
+                log(f"Accounts fetch connection error: {str(e)}")
+                self.send_json({"success": False, "message": f"Connection error: {str(e)}"}, status=500)
+                return
+                
+            pages = accounts_data.get("data", [])
+            results = []
+            for p in pages:
+                page_info = {
+                    "page_name": p.get("name"),
+                    "page_id": p.get("id"),
+                    "page_access_token": p.get("access_token"),
+                }
+                ig_account = p.get("instagram_business_account")
+                if ig_account:
+                    page_info["instagram_account"] = {
+                        "id": ig_account.get("id"),
+                        "username": ig_account.get("username")
+                    }
+                results.append(page_info)
+                
+            log(f"Successfully discovered {len(results)} pages/accounts.")
+            self.send_json({"success": True, "pages": results})
         
         elif self.path == "/api/rules":
             success = save_json_file(RULES_FILE, payload)

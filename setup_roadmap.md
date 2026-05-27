@@ -115,3 +115,21 @@ Enable Git writes to allow the action to commit the processed comment cache:
 
 ### Step 3: Execution
 The poller `.github/workflows/instagram_auto_dm.yml` runs every **15 minutes**, analyzing recent posts/reels and updating the `sent_comments.json` cache on the main branch.
+
+---
+
+## 🔒 Phase 7: Permanent Token Exchange & Unicode Troubleshooting
+*Added on 2026-05-27*
+
+To resolve short-lived token expiration and formatting crashes on Windows console hosts:
+
+1. **Integrated Automated Token Generator**:
+   - Built a `/api/retrieve-tokens` service route into `auto_dm.py` to exchange standard user Graph Explorer tokens for long-lived User Tokens, then fetch matching Page details.
+   - Connected the generator to the Setup Dashboard (`index.html`/`app.js`) to discover the associated accounts and IDs automatically and write a permanent, non-expiring Page Access Token to `config.json`.
+2. **Fixed Emoji Decoding Crashes**:
+   - Addressed `UnicodeEncodeError` faults triggered when logging emoji-heavy Instagram comments (like `❌`, `✅`, `😂`) on Windows command lines.
+   - Forced `stdout`/`stderr` output reconfigurations to UTF-8 on Windows runtimes, backed by safe string replacements in the `log()` function.
+3. **Restored Automation**:
+   - Confirmed the permanent token works correctly and verified the local poller finishes successfully.
+   - Updated the repository secret `INSTAGRAM_ACCESS_TOKEN` with the newly generated permanent Page token to keep GitHub Actions polling continuously.
+

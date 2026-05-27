@@ -43,7 +43,7 @@ To connect the bot to Instagram, you must obtain API credentials from Meta's Dev
 
 ---
 
-## 💻 Local Dashboard Configuration
+## 💻 Local Dashboard Configuration & Setup Assistant
 
 You can configure and test your bot using the built-in glassmorphic setup panel:
 
@@ -52,15 +52,25 @@ You can configure and test your bot using the built-in glassmorphic setup panel:
    python auto_dm.py --dashboard
    ```
 2. **Access the Interface**: Open your browser and navigate to `http://localhost:8000`.
-3. **Configure Settings**:
-   - Go to the **Credentials** tab and paste your Access Token, Instagram Business Account ID, and Facebook Page ID.
+3. **Automated Setup Helper (Recommended)**:
+   - Paste your **Meta App ID**, **Meta App Secret**, and a temporary **Short-Lived User Access Token** (retrieved from the Graph API Explorer) into the **Permanent Token Generator**.
+   - Click **Discover Accounts**. Under the hood, this exchanges your user token for a long-lived one, queries Meta for your pages, and automatically generates a **Permanent Page Access Token** (that never expires).
+   - Select your discovered account from the dropdown list and click **Apply Credentials** to instantly fill out the forms with your permanent token and correct page/account IDs.
+4. **Manual Configuration**:
+   - Go to the **Credentials Configuration** tab and review the Access Token, Instagram Business Account ID, and Facebook Page ID.
    - Click **Test Connection** to verify connection to Meta.
    - Click **Save Configuration** to write settings to `config.json` (this file is ignored by git to keep your tokens secure).
-4. **Create Reply Rules**:
+5. **Create Reply Rules**:
    - Switch to the **Reply Rules** tab.
    - Click **Add New Rule**.
    - You can set up keyword rules (e.g., matching "link" or "price") or edit the active **Universal Catch-All** rule which responds to any comment.
-5. **Run Manual Scan**: Click **Run Manual Poll** in the sidebar to scan your recent comments immediately and check the **Terminal Logs** panel for results.
+6. **Run Manual Scan**: Click **Run Manual Poll** in the sidebar to scan your recent comments immediately and check the **Terminal Logs** panel for results.
+
+---
+
+### 🛡️ Windows Console Unicode & Emoji Support
+The polling and dashboard engine is configured with a robust logging fallback. On Windows consoles, printing comments that contain emojis (e.g., `❌`, `✅`, `😂`) is protected against standard `UnicodeEncodeError` crashes by dynamically setting the terminal encoding to `UTF-8` on startup and applying automatic character replacement fallbacks in the log output streams.
+
 
 ---
 

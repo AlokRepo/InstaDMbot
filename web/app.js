@@ -193,11 +193,29 @@ async function fetchAPI(endpoint, method = 'GET', body = null) {
 
 // --- Data Loading ---
 async function loadAllData() {
+  await loadProfile();
   await loadConfig();
   await loadRules();
   await loadCache();
   await loadLogs();
   checkConnectionStatus();
+}
+
+async function loadProfile() {
+  const res = await fetchAPI('/api/profile');
+  const container = document.getElementById('profile-indicator-container');
+  const span = document.getElementById('profile-name-span');
+  
+  if (res.ok && res.data && res.data.profile) {
+    if (container && span) {
+      span.innerText = res.data.profile;
+      container.style.display = 'block';
+    }
+  } else {
+    if (container) {
+      container.style.display = 'none';
+    }
+  }
 }
 
 async function loadConfig() {

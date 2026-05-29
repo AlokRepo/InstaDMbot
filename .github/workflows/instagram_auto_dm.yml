@@ -27,23 +27,21 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Verify Secret Credentials Presence
+      - name: Verify Setup Secrets
         run: |
-          if [ -z "${{ secrets.INSTAGRAM_ACCESS_TOKEN }}" ]; then
-            echo "::error::INSTAGRAM_ACCESS_TOKEN secret is missing. Set it in repository Settings > Secrets and Variables > Actions."
-            exit 1
+          echo "Checking configured credentials..."
+          if [ -n "${{ secrets.INSTAGRAM_ACCESS_TOKEN }}" ]; then
+            echo "✓ Found credentials for default profile."
+          else
+            echo "⚠ Default profile credentials not set."
           fi
-          if [ -z "${{ secrets.INSTAGRAM_BUSINESS_ACCOUNT_ID }}" ]; then
-            echo "::error::INSTAGRAM_BUSINESS_ACCOUNT_ID secret is missing. Set it in repository Settings."
-            exit 1
+          if [ -n "${{ secrets.BRAND_B_ACCESS_TOKEN || secrets.ACC_2_ACCESS_TOKEN }}" ]; then
+            echo "✓ Found credentials for profile 'brand_b'."
+          else
+            echo "⚠ Profile 'brand_b' credentials not set."
           fi
-          if [ -z "${{ secrets.FACEBOOK_PAGE_ID }}" ]; then
-            echo "::error::FACEBOOK_PAGE_ID secret is missing. Set it in repository Settings."
-            exit 1
-          fi
-          echo "Credentials checked and validated."
 
-      - name: Run Polling Script
+      - name: Run Polling - Default Profile
         env:
           INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
           INSTAGRAM_BUSINESS_ACCOUNT_ID: ${{ secrets.INSTAGRAM_BUSINESS_ACCOUNT_ID }}
@@ -52,13 +50,34 @@ jobs:
           MAX_MEDIA_TO_SCAN: 20        # Increase this to scan more posts/reels
           MAX_COMMENTS_PER_MEDIA: 50
         run: |
-          python auto_dm.py --poll
+          if [ -z "$INSTAGRAM_ACCESS_TOKEN" ]; then
+            echo "Default profile secrets not configured. Skipping."
+          else
+            echo "Running polling for Default Profile..."
+            python auto_dm.py --poll
+          fi
+
+      - name: "Run Polling - Profile: brand_b"
+        env:
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.BRAND_B_ACCESS_TOKEN || secrets.ACC_2_ACCESS_TOKEN }}
+          INSTAGRAM_BUSINESS_ACCOUNT_ID: ${{ secrets.BRAND_B_BUSINESS_ACCOUNT_ID || secrets.ACC_2_BUSINESS_ACCOUNT_ID }}
+          FACEBOOK_PAGE_ID: ${{ secrets.BRAND_B_FACEBOOK_PAGE_ID || secrets.ACC_2_FACEBOOK_PAGE_ID }}
+          COMMENT_LOOKBACK_HOURS: 24  # Increase this if you want to scan older comments
+          MAX_MEDIA_TO_SCAN: 20        # Increase this to scan more posts/reels
+          MAX_COMMENTS_PER_MEDIA: 50
+        run: |
+          if [ -z "$INSTAGRAM_ACCESS_TOKEN" ]; then
+            echo "Profile 'brand_b' secrets not configured. Skipping."
+          else
+            echo "Running polling for Profile 'brand_b'..."
+            python auto_dm.py --poll --profile brand_b
+          fi
 
       - name: Commit and Push Sent Cache Changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add sent_comments.json
+          git add sent_comments_*.json sent_comments.json 2>/dev/null || true
           
           # Only commit and push if there are actual updates to the cache
           if git diff --quiet && git diff --staged --quiet; then

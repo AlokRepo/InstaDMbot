@@ -18,7 +18,8 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-# Global Constants
+# Global Constants & Variables
+CURRENT_PROFILE = ""
 CONFIG_FILE = "config.json"
 RULES_FILE = "rules.json"
 CACHE_FILE = "sent_comments.json"
@@ -70,7 +71,13 @@ def save_json_file(filepath, data):
 
 # --- Core Configuration Class ---
 class InstagramBot:
-    def __init__(self):
+    def __init__(self, profile=""):
+        self.profile = profile or CURRENT_PROFILE
+        self.config_file = f"config_{self.profile}.json" if self.profile else CONFIG_FILE
+        self.cache_file = f"sent_comments_{self.profile}.json" if self.profile else CACHE_FILE
+        self.rules_file = RULES_FILE
+        self.log_file = f"auto_dm_{self.profile}.log" if self.profile else LOG_FILE
+
         self.access_token = os.environ.get("INSTAGRAM_ACCESS_TOKEN", "")
         self.instagram_business_account_id = os.environ.get("INSTAGRAM_BUSINESS_ACCOUNT_ID", "")
         self.facebook_page_id = os.environ.get("FACEBOOK_PAGE_ID", "")
@@ -81,11 +88,11 @@ class InstagramBot:
 
         # Load local config if env variables are not present
         self.load_local_config()
-        self.rules = load_json_file(RULES_FILE, [])
-        self.sent_comments = load_json_file(CACHE_FILE, [])
+        self.rules = load_json_file(self.rules_file, [])
+        self.sent_comments = load_json_file(self.cache_file, [])
 
     def load_local_config(self):
-        config = load_json_file(CONFIG_FILE, {})
+        config = load_json_file(self.config_file, {})
         if config:
             if not self.access_token:
                 self.access_token = config.get("access_token", "")
@@ -112,7 +119,7 @@ class InstagramBot:
         self.comment_lookback_hours = int(config_data.get("comment_lookback_hours", 24))
         
         # Save to local file
-        return save_json_file(CONFIG_FILE, config_data)
+        return save_json_file(self.config_file, config_data)
 
     def get_api_headers(self):
         return {
@@ -256,7 +263,7 @@ class InstagramBot:
                 # Keep cache bounded to last 1000 items
                 if len(self.sent_comments) > 1000:
                     self.sent_comments = self.sent_comments[-1000:]
-                save_json_file(CACHE_FILE, self.sent_comments)
+                save_json_file(self.cache_file, self.sent_comments)
                 return True
         else:
             # No matching active rule, but we still mark it processed so we don't scan it again
@@ -264,7 +271,7 @@ class InstagramBot:
             self.sent_comments.append(comment_id)
             if len(self.sent_comments) > 1000:
                 self.sent_comments = self.sent_comments[-1000:]
-            save_json_file(CACHE_FILE, self.sent_comments)
+            save_json_file(self.cache_file, self.sent_comments)
         
         return False
 
@@ -414,6 +421,8 @@ class InstagramBot:
 
 # --- Web Webhook / Dashboard Server Handler ---
 class DashboardAPIHandler(http.server.SimpleHTTPRequestHandler):
+    profile = ""
+
     def __init__(self, *args, **kwargs):
         # Default web root is in "./web" directory
         web_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "web")
@@ -421,17 +430,23 @@ class DashboardAPIHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         # Route APIs
-        if self.path.startswith("/api/config"):
-            self.send_json(load_json_file(CONFIG_FILE, {}))
+        if self.path.startswith("/api/profile"):
+            self.send_json({"profile": self.profile})
+        elif self.path.startswith("/api/config"):
+            bot = InstagramBot(profile=self.profile)
+            self.send_json(load_json_file(bot.config_file, {}))
         elif self.path.startswith("/api/rules"):
-            self.send_json(load_json_file(RULES_FILE, []))
+            bot = InstagramBot(profile=self.profile)
+            self.send_json(load_json_file(bot.rules_file, []))
         elif self.path.startswith("/api/sent_comments"):
-            self.send_json(load_json_file(CACHE_FILE, []))
+            bot = InstagramBot(profile=self.profile)
+            self.send_json(load_json_file(bot.cache_file, []))
         elif self.path.startswith("/api/logs"):
+            bot = InstagramBot(profile=self.profile)
             logs = []
-            if os.path.exists(LOG_FILE):
+            if os.path.exists(bot.log_file):
                 try:
-                    with open(LOG_FILE, "r", encoding="utf-8") as f:
+                    with open(bot.log_file, "r", encoding="utf-8") as f:
                         # Return last 100 lines
                         logs = f.readlines()[-100:]
                 except Exception as e:
@@ -454,7 +469,7 @@ class DashboardAPIHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_json({"success": False, "message": f"Invalid JSON payload: {e}"}, status=400)
                 return
 
-        bot = InstagramBot()
+        bot = InstagramBot(profile=self.profile)
 
         # Handle Webhook Callback Validation (GET is standard, but POST is webhook events)
         if self.path == "/webhook":
@@ -552,14 +567,14 @@ class DashboardAPIHandler(http.server.SimpleHTTPRequestHandler):
             self.send_json({"success": True, "pages": results})
         
         elif self.path == "/api/rules":
-            success = save_json_file(RULES_FILE, payload)
+            success = save_json_file(bot.rules_file, payload)
             if success:
                 self.send_json({"success": True, "message": "Auto-DM rules saved successfully."})
             else:
                 self.send_json({"success": False, "message": "Failed to save rules."}, status=500)
         
         elif self.path == "/api/sent_comments":
-            success = save_json_file(CACHE_FILE, payload)
+            success = save_json_file(bot.cache_file, payload)
             if success:
                 self.send_json({"success": True, "message": "Cache database updated successfully."})
             else:
@@ -594,7 +609,7 @@ class DashboardAPIHandler(http.server.SimpleHTTPRequestHandler):
         token = params.get("hub.verify_token", [""])[0]
         challenge = params.get("hub.challenge", [""])[0]
 
-        bot = InstagramBot()
+        bot = InstagramBot(profile=self.profile)
         if mode == "subscribe" and token == bot.webhook_verify_token:
             log("Webhook verification SUCCESSFUL!")
             self.send_response(200)
@@ -653,6 +668,8 @@ class CustomServerHandler(DashboardAPIHandler):
 
 # --- CLI Main Router ---
 def main():
+    global CURRENT_PROFILE, LOG_FILE
+
     if len(sys.argv) < 2:
         print("Instagram Auto-DM System")
         print("Usage:")
@@ -661,10 +678,12 @@ def main():
         print("  python auto_dm.py --webhook     - Run the webhook listener server")
         print("Options:")
         print("  --port <number>                 - Custom port for servers (default: 8000)")
+        print("  --profile <name>                - Active profile suffix for config/cache/logs")
         sys.exit(1)
 
     mode = sys.argv[1]
     port = 8000
+    profile = ""
     
     # Parse port if provided
     if "--port" in sys.argv:
@@ -674,7 +693,19 @@ def main():
         except Exception:
             print("Error: Invalid port specified. Using default 8000.")
 
-    bot = InstagramBot()
+    # Parse profile if provided
+    if "--profile" in sys.argv:
+        try:
+            profile_index = sys.argv.index("--profile")
+            profile = sys.argv[profile_index + 1].strip()
+        except Exception:
+            print("Error: Invalid profile specified.")
+
+    if profile:
+        CURRENT_PROFILE = profile
+        LOG_FILE = f"auto_dm_{profile}.log"
+
+    bot = InstagramBot(profile=profile)
 
     if mode == "--poll":
         log("Execution Mode: Polling Scheduler")
@@ -683,9 +714,10 @@ def main():
             sys.exit(1)
             
     elif mode == "--webhook":
-        log(f"Execution Mode: Webhook Server (Port: {port})")
+        log(f"Execution Mode: Webhook Server (Profile: {profile}, Port: {port})")
         log(f"Register webhook endpoint: http://your-domain-or-ngrok/webhook")
         log(f"Verification token: {bot.webhook_verify_token}")
+        CustomServerHandler.profile = profile
         server = ThreadingHTTPServer(("0.0.0.0", port), CustomServerHandler)
         try:
             server.serve_forever()
@@ -695,8 +727,9 @@ def main():
     elif mode == "--dashboard":
         # Create web folders if not existing
         os.makedirs("web", exist_ok=True)
-        log(f"Execution Mode: Setup Dashboard (Port: {port})")
+        log(f"Execution Mode: Setup Dashboard (Profile: {profile}, Port: {port})")
         log(f"Open browser and navigate to: http://localhost:{port}")
+        CustomServerHandler.profile = profile
         server = ThreadingHTTPServer(("127.0.0.1", port), CustomServerHandler)
         try:
             server.serve_forever()

@@ -1,0 +1,9 @@
+{
+  "access_token": "EAAXWOkjtAnUBRh6ZCTnO4TTjhOpPRUrwnbyma6KzjdnGzCL7RzZCktZBhUK6SCzBuycd6CYMCYPQoyO3djxZAmZCjvqP8vn6QtSVHEXuC6SXB9NgRMsY2FGn2VvCZBfBZAE5FZA66ZCNObkZCeeTcXtZACA3FECaRRtoYWL7pks9jTsXo1Axc9CAb5RpN50rxYo1tI7xnjzHpRmsDyFInXp29MEuZAnt",
+  "instagram_business_account_id": "17841467083963618",
+  "facebook_page_id": "1236949512823940",
+  "webhook_verify_token": "my_secure_token",
+  "max_media_to_scan": 30,
+  "max_comments_per_media": 100,
+  "comment_lookback_hours": 24
+}

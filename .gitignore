@@ -9,6 +9,7 @@ env/
 
 # Local sensitive configurations (credentials/tokens)
 config.json
+config_brand_b.json
 
 # Logs
 *.log

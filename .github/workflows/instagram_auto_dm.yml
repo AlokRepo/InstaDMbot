@@ -35,7 +35,7 @@ jobs:
           else
             echo "⚠ Default profile credentials not set."
           fi
-          if [ -n "${{ secrets.BRAND_B_ACCESS_TOKEN || secrets.ACC_2_ACCESS_TOKEN }}" ]; then
+          if [ -n "${{ secrets.BRAND_B_ACCESS_TOKEN }}" ]; then
             echo "✓ Found credentials for profile 'brand_b'."
           else
             echo "⚠ Profile 'brand_b' credentials not set."
@@ -59,9 +59,9 @@ jobs:
 
       - name: "Run Polling - Profile: brand_b"
         env:
-          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.BRAND_B_ACCESS_TOKEN || secrets.ACC_2_ACCESS_TOKEN }}
-          INSTAGRAM_BUSINESS_ACCOUNT_ID: ${{ secrets.BRAND_B_BUSINESS_ACCOUNT_ID || secrets.ACC_2_BUSINESS_ACCOUNT_ID }}
-          FACEBOOK_PAGE_ID: ${{ secrets.BRAND_B_FACEBOOK_PAGE_ID || secrets.ACC_2_FACEBOOK_PAGE_ID }}
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.BRAND_B_ACCESS_TOKEN }}
+          INSTAGRAM_BUSINESS_ACCOUNT_ID: ${{ secrets.BRAND_B_BUSINESS_ACCOUNT_ID }}
+          FACEBOOK_PAGE_ID: ${{ secrets.BRAND_B_FACEBOOK_PAGE_ID }}
           COMMENT_LOOKBACK_HOURS: 24  # Increase this if you want to scan older comments
           MAX_MEDIA_TO_SCAN: 20        # Increase this to scan more posts/reels
           MAX_COMMENTS_PER_MEDIA: 50

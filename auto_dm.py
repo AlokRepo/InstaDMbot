@@ -165,23 +165,94 @@ class InstagramBot:
                 "error": {"error": {"message": str(e)}}
             }
 
+    # --- Verify and Log Connection ---
+    def verify_and_log_connection(self):
+        log(f"Validating configuration for profile: '{self.profile or 'default'}'...")
+        log(f"Configured Instagram Business Account ID: {self.instagram_business_account_id}")
+        log(f"Configured Facebook Page ID: {self.facebook_page_id or 'Not Specified'}")
+        
+        # Test token and linked accounts
+        url_page = f"https://graph.facebook.com/{API_VERSION}/me?fields=id,name,instagram_business_account{{id,username}}"
+        res_page = self.make_request(url_page)
+        
+        if res_page["success"]:
+            page_id = res_page["data"].get("id")
+            page_name = res_page["data"].get("name")
+            ig_account = res_page["data"].get("instagram_business_account")
+            ig_id = ig_account.get("id") if ig_account else None
+            ig_username = ig_account.get("username") if ig_account else None
+            
+            log(f"✓ Access Token verified: PAGE token for '{page_name}' (ID: {page_id})")
+            
+            # Check Page ID mismatch or fill if empty
+            if self.facebook_page_id and str(self.facebook_page_id) != str(page_id):
+                log(f"⚠ WARNING: Configured Facebook Page ID '{self.facebook_page_id}' does not match the token's Page ID '{page_id}'! Using token's Page ID '{page_id}' for sending DMs.")
+                self.facebook_page_id = page_id
+            elif not self.facebook_page_id:
+                log(f"ℹ INFO: Facebook Page ID was not specified. Automatically using token's Page ID '{page_id}'.")
+                self.facebook_page_id = page_id
+                
+            # Check Instagram Business Account ID mismatch
+            if ig_id:
+                if str(self.instagram_business_account_id) != str(ig_id):
+                    log(f"⚠ WARNING: Configured Instagram Account ID '{self.instagram_business_account_id}' does not match the token's linked Instagram Account ID '{ig_id}' (@{ig_username})!")
+            else:
+                log(f"⚠ WARNING: The Facebook Page '{page_name}' ({page_id}) does not have a linked Instagram Business Account! DMs and comments will fail.")
+        else:
+            # Let's check if it's a User token
+            url_user = f"https://graph.facebook.com/{API_VERSION}/me?fields=id,name"
+            res_user = self.make_request(url_user)
+            if res_user["success"]:
+                log(f"⚠ WARNING: Configured access token is a USER token (Name: {res_user['data'].get('name')}), NOT a PAGE access token! DMs will fail because sending DMs requires a Page Access Token.")
+            else:
+                err_msg = res_page.get("error", {}).get("error", {}).get("message", "Invalid access token or API error.")
+                log(f"❌ Connection check failed: {err_msg}")
+
     # --- Test Credentials API Connection ---
     def test_connection(self):
         if not self.access_token or not self.instagram_business_account_id:
             return {"success": False, "message": "Missing Access Token or Instagram Business Account ID."}
         
-        url = f"https://graph.facebook.com/{API_VERSION}/{self.instagram_business_account_id}?fields=username"
-        res = self.make_request(url)
-        if res["success"]:
-            username = res["data"].get("username", "Unknown")
-            log(f"Connection test successful: Authenticated as @{username}")
+        # Verify page and token type
+        url_page = f"https://graph.facebook.com/{API_VERSION}/me?fields=id,name,instagram_business_account{{id,username}}"
+        res_page = self.make_request(url_page)
+        
+        if res_page["success"]:
+            page_id = res_page["data"].get("id")
+            page_name = res_page["data"].get("name")
+            ig_account = res_page["data"].get("instagram_business_account")
+            ig_id = ig_account.get("id") if ig_account else None
+            ig_username = ig_account.get("username") if ig_account else "Unknown"
+            
+            # Check Page ID mismatch
+            if self.facebook_page_id and str(self.facebook_page_id) != str(page_id):
+                log(f"Warning: Facebook Page ID mismatch (Configured: {self.facebook_page_id}, Token: {page_id})")
+            
+            if ig_id and str(self.instagram_business_account_id) != str(ig_id):
+                err_msg = f"Token belongs to Page '{page_name}' but linked Instagram account ID is '{ig_id}' (@{ig_username}), not '{self.instagram_business_account_id}'!"
+                log(f"Connection test warning: {err_msg}")
+                return {
+                    "success": True,
+                    "username": ig_username,
+                    "message": f"Connected, but warning: {err_msg}"
+                }
+                
+            log(f"Connection test successful: Authenticated as @{ig_username} via Page '{page_name}'")
             return {
                 "success": True,
-                "username": username,
-                "message": f"Successfully connected! Authenticated as @{username}."
+                "username": ig_username,
+                "message": f"Successfully connected! Authenticated as @{ig_username} (Page: {page_name})."
             }
         else:
-            err_msg = res["error"].get("error", {}).get("message", "API connection failed.")
+            # Try to see if it's a User token
+            url_user = f"https://graph.facebook.com/{API_VERSION}/me?fields=id,name"
+            res_user = self.make_request(url_user)
+            if res_user["success"]:
+                err_msg = f"The access token is a USER token for '{res_user['data'].get('name')}', NOT a PAGE token. DMs will fail to send!"
+                log(f"Connection test failed: {err_msg}")
+                return {"success": False, "message": err_msg}
+            
+            err_msg = res_page.get("error", {}).get("error", {}).get("message", "API connection failed.")
             log(f"Connection test failed: {err_msg}")
             return {"success": False, "message": err_msg}
 
@@ -328,6 +399,9 @@ class InstagramBot:
         if not self.access_token or not self.instagram_business_account_id:
             log("Error: Missing credentials (Access Token or Business Account ID). Aborting.")
             return {"success": False, "message": "Missing credentials."}
+
+        # Validate configuration and log token details
+        self.verify_and_log_connection()
 
         self_username = self.get_self_username()
         if not self_username:
